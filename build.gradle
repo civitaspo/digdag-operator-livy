@@ -9,8 +9,8 @@ group = 'pro.civitaspo'
 version = '0.0.1'
 
 def digdagVersion = '0.9.27'
-def scalaSemanticVersion = "2.11.12"
-def depScalaVersion = "2.11"
+def scalaSemanticVersion = "2.12.6"
+def depScalaVersion = "2.12"
 
 repositories {
     mavenCentral()
@@ -26,9 +26,6 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.scala-lang/scala-library
     compile group: 'org.scala-lang', name: 'scala-library', version: scalaSemanticVersion
-    // https://mvnrepository.com/artifact/org.apache.livy/livy-scala-api
-    compile group: 'org.apache.livy', name: "livy-scala-api_$depScalaVersion", version: '0.5.0-incubating'
-
 }
 
 shadowJar {
