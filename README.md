@@ -1,7 +1,108 @@
-# digdag-plugin-example
-[![Jitpack](https://jitpack.io/v/myui/digdag-plugin-example.svg)](https://jitpack.io/#myui/digdag-plugin-example) [![Digdag](https://img.shields.io/badge/digdag-v0.9.12-brightgreen.svg)](https://github.com/treasure-data/digdag/releases/tag/v0.9.12)
+# digdag-operator-livy
+[![Jitpack](https://jitpack.io/v/pro.civitaspo/digdag-operator-livy.svg)](https://jitpack.io/#pro.civitaspo/digdag-operator-livy) [![CircleCI](https://circleci.com/gh/civitaspo/digdag-operator-livy.svg?style=shield)](https://circleci.com/gh/civitaspo/digdag-operator-livy) [![Digdag](https://img.shields.io/badge/digdag-v0.9.27-brightgreen.svg)](https://github.com/treasure-data/digdag/releases/tag/v0.9.27)
 
-# 1) build
+This operator is for operating a job by Livy REST API.
+
+# Overview
+
+- Plugin type: operator
+
+# Usage
+
+```yaml
+_export:
+  plugin:
+    repositories:
+      - https://jitpack.io
+    dependencies:
+      - pro.civitaspo:digdag-operator-livy:0.0.1
+  livy:
+    host: mylivy.internal
+    port: 8998
+    scheme: http
+
+        
++step1:
+  livy.submit_job>:
+  job:
+    name: livy-test
+    class: 'pro.civitaspo.livy_test.Launcher'
+    file: s3://mybucket/path/to/livy-test.jar
+    args: ['run', '-e', 'development']
+    driver-memory: 3G
+    driver-cores: 1
+    executor-memory: 30G
+    executor-cores: 4
+    num-executors: 25
+  wait_until_finished: true
+  wait_timeout_duration: 40m
+
++step2:
+  echo>: ${livy.last_job.id}
+
+```
+
+# Configuration
+
+## Remarks
+
+- type `DurationParam` is strings matched `\s*(?:(?<days>\d+)\s*d)?\s*(?:(?<hours>\d+)\s*h)?\s*(?:(?<minutes>\d+)\s*m)?\s*(?:(?<seconds>\d+)\s*s)?\s*`.
+  - The strings is used as `java.time.Duration`.
+
+## Common Configuration
+
+### Options
+
+- **host**: Livy API host name. (string, required)
+- **port**: Livy API port. (integer, default: `8998`)
+- **scheme**: `"https"` or `"http"` (default: `"http"`)
+
+## Configuration for `livy.submit_job>` operator
+
+### Options
+
+- **job**: Specify a job settings. See [doc (POST /batches)](http://livy.incubator.apache.org./docs/latest/rest-api.html) (map, required)
+  - **file**: File containing the application to execute. (string, required)
+  - **proxy_user**: User to impersonate when running the job. (string, optional)
+  - **class_name**: Application Java/Spark main class. (string, optional)
+  - **args**: Command line arguments for the application. (array of string, optional)
+  - **jars**: jars to be used in this session. (array of string, optional)
+  - **py_files**: Python files to be used in this session. (array of string, optional)
+  - **files**: files to be used in this session. (array of string, optional)
+  - **driver_memory**: Amount of memory to use for the driver process. (string, optional)
+  - **driver_cores**: Number of cores to use for the driver process. (integer, optional)
+  - **executor_memory**: Amount of memory to use per executor process. (string, optional)
+  - **executor_cores**: Number of cores to use for each executor. (integer, optional)
+  - **num_executors**: Number of executors to launch for this session. (integer, optional)
+  - **archives**: Archives to be used in this session. (array of string, optional)
+  - **queue**: The name of the YARN queue to which submitted. (string, optional)
+  - **name**: The name of this session. (string, optional)
+  - **conf**: Spark configuration properties. (string to string map, optional)
+- **wait_until_finished**: Specify whether to wait until the job is finished or not. (boolean, default: `true`)
+- **wait_timeout_duration**: Specify timeout period. (`DurationParam`, default: `"45m"`)
+  
+### Output Parameters
+
+- **livy.last_job.session_id**: The session id. (integer)
+- **livy.last_job.application_id**: The application id of this session. (string)
+- **livy.last_job.application_info**: The detailed application info. (string to string map)
+- **livy.last_job.state**: The batch state. (string)
+
+## Configuration for `livy.wait_job>` operator
+
+### Options
+
+- **livy.wait_job>**: The session id. (integer, required)
+- **success_states**: The session states breaks polling the session. Valid values are `"not_started"`, `"starting"`, `"recovering"`, `"idle"`, `"running"`, `"busy"`, `"shutting_down"`, `"error"`, `"dead"`, `"killed"` and `"success"`. (array of string, required)
+- **error_states**: The session states breaks polling the session with errors. Valid values are `"not_started"`, `"starting"`, `"recovering"`, `"idle"`, `"running"`, `"busy"`, `"shutting_down"`, `"error"`, `"dead"`, `"killed"` and `"success"`. (array of string, optional)
+- **polling_interval**: Specify polling interval. (`DurationParam`, default: `"5s"`)
+- **timeout_duration**: Specify timeout period. (`DurationParam`, default: `"45m"`)
+
+# Development
+
+## Run an Example
+
+### 1) build
 
 ```sh
 ./gradlew publish
@@ -9,62 +110,26 @@
 
 Artifacts are build on local repos: `./build/repo`.
 
-# 2) run an example
+### 2) run an example
 
 ```sh
-digdag selfupdate
-
-digdag run --project sample plugin.dig -p repos=`pwd`/build/repo
+./example/run.sh
 ```
 
-You'll find the result of the task in `./sample/example.out`.
-
----
-
-# Writing your own plugin
-
-1. You need to implement [a Plugin class](https://github.com/myui/digdag-plugin-example/blob/master/src/main/java/io/digdag/plugin/example/ExamplePlugin.java) that implements `io.digdag.spi.Plugin`.
-
-2. Then, list it on [io.digdag.spi.Plugin](https://github.com/myui/digdag-plugin-example/blob/master/src/main/resources/META-INF/services/io.digdag.spi.Plugin). The listed plugins are loaded by Digdag.
-
-You can optionally create Eclipse/Idea project files as follows:
-```sh
-gradle eclipse
-gradle idea
-```
-
-*Note:* _It's better to change the dependencies from `provided` to `compile` in [build.gradle](https://github.com/myui/digdag-plugin-example/blob/master/build.gradle) for creating idea/eclipse project config._
-
-# Plugin Loading
-
-Digdag loads pluigins from Maven repositories by configuring [plugin options](https://github.com/myui/digdag-plugin-example/blob/master/sample/plugin.dig).
-
-You can use a local Maven repository (local FS, Amazon S3) or any public Maven repository ([Maven Central](http://search.maven.org/), [Sonatype](https://www.sonatype.com/), [Bintary](https://bintray.com/), [Jitpack](https://jitpack.io/)) for the plugin artifact repository.
-
-# Publishing your plugin using Github and Jitpack
-
-[Jitpack](https://jitpack.io/) is useful for publishing your github repository as a maven repository.
+## (TODO) Run Tests
 
 ```sh
-git tag v0.1.3
-git push origin v0.1.3
+./gradlew test
 ```
 
-https://jitpack.io/#myui/digdag-plugin-example/v0.1.3
+# ChangeLog
 
-Now, you can load the artifact from a github repository in [a dig file](https://github.com/myui/digdag-plugin-example/blob/master/sample/plugin.dig) as follows:
+[CHANGELOG.md](./CHANGELOG.md)
 
-```
-_export:
-  plugin:
-    repositories:
-      # - file://${repos}
-      - https://jitpack.io
-    dependencies:
-      # - io.digdag.plugin:digdag-plugin-example:0.1.3
-      - com.github.myui:digdag-plugin-example:v0.1.3
-```
+# License
 
-# Further reading
+[Apache License 2.0](./LICENSE.txt)
 
-- [Operators](http://docs.digdag.io/operators.html) and [their implementations](https://github.com/treasure-data/digdag/tree/master/digdag-standards/src/main/java/io/digdag/standards/operator)
+# Author
+
+@civitaspo
