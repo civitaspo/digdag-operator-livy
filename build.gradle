@@ -27,6 +27,8 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.scala-lang/scala-library
     compile group: 'org.scala-lang', name: 'scala-library', version: scalaSemanticVersion
+    // https://mvnrepository.com/artifact/org.scalaj/scalaj-http
+    compile group: 'org.scalaj', name: "scalaj-http_${depScalaVersion}", version: '2.3.0'
 }
 
 shadowJar {
