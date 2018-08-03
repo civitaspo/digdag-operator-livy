@@ -75,14 +75,14 @@ class RetryExecutorWrapper(
     RetryExecutorWrapper(exe.onGiveup(g), param)
   }
 
-  def runInterruptible[T](f: () => T): T = {
+  def runInterruptible[T](f: => T): T = {
     val c = new Callable[T] {
       override def call(): T = f()
     }
     exe.runInterruptible(c)
   }
 
-  def run[T](f: () => T): T = {
+  def run[T](f: => T): T = {
     val c = new Callable[T] {
       override def call(): T = f()
     }
