@@ -19,19 +19,19 @@ class RetryExecutorWrapper(
     RetryExecutorWrapper(exe.withRetryLimit(count), param)
   }
 
-  def withInitialRetryWait(msec: Int): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exe.withInitialRetryWait(msec), param)
+  def withInitialRetryWait(duration: Duration): RetryExecutorWrapper = {
+    RetryExecutorWrapper(exe.withInitialRetryWait(duration.toMillis.toInt), param)
   }
 
-  def withMaxRetryWait(msec: Int): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exe.withMaxRetryWait(msec), param)
+  def withMaxRetryWait(duration: Duration): RetryExecutorWrapper = {
+    RetryExecutorWrapper(exe.withMaxRetryWait(duration.toMillis.toInt), param)
   }
 
   def withWaitGrowRate(rate: Double): RetryExecutorWrapper = {
     RetryExecutorWrapper(exe.withWaitGrowRate(rate), param)
   }
 
-  def withTimeoutDuration(duration: Duration): RetryExecutorWrapper = {
+  def withTimeout(duration: Duration): RetryExecutorWrapper = {
     val newParam: ParamInWrapper = ParamInWrapper(duration.toMillis.toInt, param.totalWaitMillisCounter)
     RetryExecutorWrapper(exe, newParam)
   }
