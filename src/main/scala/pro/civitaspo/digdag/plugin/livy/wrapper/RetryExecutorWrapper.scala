@@ -1,82 +1,92 @@
 package pro.civitaspo.digdag.plugin.livy.wrapper
 
+import java.time.Duration
 import java.util.concurrent.Callable
 
 import io.digdag.util.RetryExecutor
-import io.digdag.util.RetryExecutor.{GiveupAction, RetryAction, RetryPredicate}
+import io.digdag.util.RetryExecutor.{GiveupAction, RetryAction, RetryGiveupException, RetryPredicate}
+
+case class ParamInWrapper(timeoutDurationMillis: Int, totalWaitMillisCounter: Iterator[Int] = Stream.from(0).iterator)
+case class ParamInRetry(e: Exception, retryCount: Int, retryLimit: Int, retryWaitMillis: Int, totalWaitMillis: Long)
+case class ParamInGiveup(firstException: Exception, lastException: Exception)
 
 class RetryExecutorWrapper(
   exe: RetryExecutor,
-  totalWaitMillisCounter: Iterator[Int] = Stream.from(1).iterator
+  param: ParamInWrapper
 ) {
 
-  case class ParamInRetry(e: Exception, retryCount: Int, retryLimit: Int, retryWaitMillis: Int, totalWaitMillis: Long)
-  case class ParamInGiveup(firstException: Exception, lastException: Exception)
-
   def withRetryLimit(count: Int): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exe.withRetryLimit(count), totalWaitMillisCounter)
+    RetryExecutorWrapper(exe.withRetryLimit(count), param)
   }
 
   def withInitialRetryWait(msec: Int): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exe.withInitialRetryWait(msec), totalWaitMillisCounter)
+    RetryExecutorWrapper(exe.withInitialRetryWait(msec), param)
   }
 
   def withMaxRetryWait(msec: Int): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exe.withMaxRetryWait(msec), totalWaitMillisCounter)
+    RetryExecutorWrapper(exe.withMaxRetryWait(msec), param)
   }
 
   def withWaitGrowRate(rate: Double): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exe.withWaitGrowRate(rate), totalWaitMillisCounter)
+    RetryExecutorWrapper(exe.withWaitGrowRate(rate), param)
+  }
+
+  def withTimeoutDuration(duration: Duration): RetryExecutorWrapper = {
+    val newParam: ParamInWrapper = ParamInWrapper(duration.toMillis.toInt, param.totalWaitMillisCounter)
+    RetryExecutorWrapper(exe, newParam)
   }
 
   def retryIf(retryable: Exception => Boolean): RetryExecutorWrapper = {
-    RetryExecutorWrapper(
-      exe.retryIf(new RetryPredicate {
-        override def test(t: Exception): Boolean = retryable(t)
-      }),
-      totalWaitMillisCounter
-    )
+    val r = new RetryPredicate {
+      override def test(t: Exception): Boolean = retryable(t)
+    }
+    RetryExecutorWrapper(exe.retryIf(r), param)
   }
 
   def onRetry(f: ParamInRetry => Unit): RetryExecutorWrapper = {
-    RetryExecutorWrapper(
-      exe.onRetry(new RetryAction {
-        override def onRetry(
-          exception: Exception,
-          retryCount: Int,
-          retryLimit: Int,
-          retryWait: Int
-        ): Unit = {
-          var totalWaitMillis: Int = _
-          (1 to retryWait).foreach(_ => totalWaitMillis = totalWaitMillisCounter.next())
-          f(ParamInRetry(exception, retryCount, retryLimit, retryWait, totalWaitMillis))
+    val r = new RetryAction {
+      override def onRetry(
+        exception: Exception,
+        retryCount: Int,
+        retryLimit: Int,
+        retryWait: Int
+      ): Unit = {
+        val totalWaitMillis: Int = param.totalWaitMillisCounter.next()
+        if (totalWaitMillis > param.timeoutDurationMillis) {
+          throw new RetryGiveupException(
+            new IllegalStateException(
+              s"Total Wait: ${totalWaitMillis}ms is exceeded Timeout: ${param.timeoutDurationMillis}ms"
+            )
+          )
         }
-      }),
-      totalWaitMillisCounter
-    )
+        (1 until retryWait).foreach(_ => param.totalWaitMillisCounter.next())
+        f(ParamInRetry(exception, retryCount, retryLimit, retryWait, totalWaitMillis))
+      }
+    }
+    RetryExecutorWrapper(exe.onRetry(r), param)
   }
 
   def onGiveup(f: ParamInGiveup => Unit): RetryExecutorWrapper = {
-    RetryExecutorWrapper(
-      exe.onGiveup(new GiveupAction {
-        override def onGiveup(firstException: Exception, lastException: Exception): Unit = {
-          f(ParamInGiveup(firstException, lastException))
-        }
-      }),
-      totalWaitMillisCounter
-    )
+    val g = new GiveupAction {
+      override def onGiveup(firstException: Exception, lastException: Exception): Unit = {
+        f(ParamInGiveup(firstException, lastException))
+      }
+    }
+    RetryExecutorWrapper(exe.onGiveup(g), param)
   }
 
   def runInterruptible[T](f: () => T): T = {
-    exe.runInterruptible(new Callable[T] {
+    val c = new Callable[T] {
       override def call(): T = f()
-    })
+    }
+    exe.runInterruptible(c)
   }
 
   def run[T](f: () => T): T = {
-    exe.run(new Callable[T] {
+    val c = new Callable[T] {
       override def call(): T = f()
-    })
+    }
+    exe.run(c)
   }
 }
 
@@ -84,9 +94,12 @@ object RetryExecutorWrapper {
 
   def apply(
     exe: RetryExecutor,
-    totalWaitMillisCounter: Iterator[Int] = Stream.from(1).iterator
-  ): RetryExecutorWrapper = new RetryExecutorWrapper(exe, totalWaitMillisCounter)
+    param: ParamInWrapper
+  ): RetryExecutorWrapper = new RetryExecutorWrapper(exe, param)
 
-  def apply(): RetryExecutorWrapper = new RetryExecutorWrapper(RetryExecutor.retryExecutor())
+  def apply(): RetryExecutorWrapper = RetryExecutorWrapper(
+    RetryExecutor.retryExecutor(),
+    ParamInWrapper(Int.MaxValue)
+  )
 
 }
