@@ -100,6 +100,13 @@ _export:
 - **polling_interval**: Specify polling interval. (`DurationParam`, default: `"5s"`)
 - **timeout_duration**: Specify timeout period. (`DurationParam`, default: `"45m"`)
 
+### Output Parameters
+
+- **livy.last_job.session_id**: The session id. (integer)
+- **livy.last_job.application_id**: The application id of this session. (string)
+- **livy.last_job.application_info**: The detailed application info. (string to string map)
+- **livy.last_job.state**: The batch state. (string)
+
 # Development
 
 ## Run an Example
