@@ -12,60 +12,46 @@ case class ParamInGiveup(firstException: Exception, lastException: Exception)
 
 class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
 
-  private def incrementTotalWaitMillis(retryWait: Int): Int = {
-    val totalWaitMillis: Int = param.totalWaitMillisCounter.next()
-    if (totalWaitMillis > param.timeoutDurationMillis) {
-      throw new RetryGiveupException(new IllegalStateException(s"Total Wait: ${totalWaitMillis}ms is exceeded Timeout: ${param.timeoutDurationMillis}ms"))
-    }
-    (1 until retryWait).foreach(_ => param.totalWaitMillisCounter.next())
-    totalWaitMillis
-  }
-
-  val exeMod: RetryExecutor = {
-    val r = new RetryAction {
-      override def onRetry(exception: Exception, retryCount: Int, retryLimit: Int, retryWait: Int): Unit = {
-        incrementTotalWaitMillis(retryWait)
-      }
-    }
-    exe.onRetry(r)
-  }
-
   def withRetryLimit(count: Int): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exeMod.withRetryLimit(count), param)
+    RetryExecutorWrapper(exe.withRetryLimit(count), param)
   }
 
   def withInitialRetryWait(duration: Duration): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exeMod.withInitialRetryWait(duration.toMillis.toInt), param)
+    RetryExecutorWrapper(exe.withInitialRetryWait(duration.toMillis.toInt), param)
   }
 
   def withMaxRetryWait(duration: Duration): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exeMod.withMaxRetryWait(duration.toMillis.toInt), param)
+    RetryExecutorWrapper(exe.withMaxRetryWait(duration.toMillis.toInt), param)
   }
 
   def withWaitGrowRate(rate: Double): RetryExecutorWrapper = {
-    RetryExecutorWrapper(exeMod.withWaitGrowRate(rate), param)
+    RetryExecutorWrapper(exe.withWaitGrowRate(rate), param)
   }
 
   def withTimeout(duration: Duration): RetryExecutorWrapper = {
     val newParam: ParamInWrapper = ParamInWrapper(duration.toMillis.toInt, param.totalWaitMillisCounter)
-    RetryExecutorWrapper(exeMod, newParam)
+    RetryExecutorWrapper(exe, newParam)
   }
 
   def retryIf(retryable: Exception => Boolean): RetryExecutorWrapper = {
     val r = new RetryPredicate {
       override def test(t: Exception): Boolean = retryable(t)
     }
-    RetryExecutorWrapper(exeMod.retryIf(r), param)
+    RetryExecutorWrapper(exe.retryIf(r), param)
   }
 
   def onRetry(f: ParamInRetry => Unit): RetryExecutorWrapper = {
     val r = new RetryAction {
       override def onRetry(exception: Exception, retryCount: Int, retryLimit: Int, retryWait: Int): Unit = {
-        val totalWaitMillis: Int = incrementTotalWaitMillis(retryWait)
+        val totalWaitMillis: Int = param.totalWaitMillisCounter.next()
+        if (totalWaitMillis > param.timeoutDurationMillis) {
+          throw new RetryGiveupException(new IllegalStateException(s"Total Wait: ${totalWaitMillis}ms is exceeded Timeout: ${param.timeoutDurationMillis}ms"))
+        }
+        (1 until retryWait).foreach(_ => param.totalWaitMillisCounter.next())
         f(ParamInRetry(exception, retryCount, retryLimit, retryWait, totalWaitMillis))
       }
     }
-    RetryExecutorWrapper(exeMod.onRetry(r), param)
+    RetryExecutorWrapper(exe.onRetry(r), param)
   }
 
   def onGiveup(f: ParamInGiveup => Unit): RetryExecutorWrapper = {
@@ -74,21 +60,21 @@ class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
         f(ParamInGiveup(firstException, lastException))
       }
     }
-    RetryExecutorWrapper(exeMod.onGiveup(g), param)
+    RetryExecutorWrapper(exe.onGiveup(g), param)
   }
 
   def runInterruptible[T](f: => T): T = {
     val c = new Callable[T] {
       override def call(): T = f
     }
-    exeMod.runInterruptible(c)
+    exe.runInterruptible(c)
   }
 
   def run[T](f: => T): T = {
     val c = new Callable[T] {
       override def call(): T = f
     }
-    exeMod.run(c)
+    exe.run(c)
   }
 }
 
