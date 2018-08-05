@@ -11,5 +11,5 @@ LOCAL_MAVEN_REPO=$ROOT/build/repo
   rm -rf .digdag
 
   ## run
-  digdag run example.dig -c allow.properties -p repos=${LOCAL_MAVEN_REPO} --no-save
+  digdag run example.dig -p repos=${LOCAL_MAVEN_REPO} --no-save
 )

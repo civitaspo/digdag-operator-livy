@@ -56,6 +56,8 @@ _export:
 - **host**: Livy API host name. (string, required)
 - **port**: Livy API port. (integer, default: `8998`)
 - **scheme**: `"https"` or `"http"` (default: `"http"`)
+- **header**: Header for HTTP Requests. (string to string map, optional)
+  - Note: Force to include `Content-type: application/json` as header.
 
 ## Configuration for `livy.submit_job>` operator
 
@@ -76,7 +78,7 @@ _export:
   - **num_executors**: Number of executors to launch for this session. (integer, optional)
   - **archives**: Archives to be used in this session. (array of string, optional)
   - **queue**: The name of the YARN queue to which submitted. (string, optional)
-  - **name**: The name of this session. (string, optional)
+  - **name**: The name of this session. (string, default: `"digdag-${session_uuid}"`)
   - **conf**: Spark configuration properties. (string to string map, optional)
 - **wait_until_finished**: Specify whether to wait until the job is finished or not. (boolean, default: `true`)
 - **wait_timeout_duration**: Specify timeout period. (`DurationParam`, default: `"45m"`)
