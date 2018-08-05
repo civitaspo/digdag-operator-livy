@@ -4,9 +4,9 @@ import java.util.{Arrays => JArrays, List => JList}
 import java.lang.reflect.Constructor
 
 import io.digdag.client.config.Config
-import io.digdag.spi.{Operator, OperatorContext, OperatorFactory, OperatorProvider, TemplateEngine}
+import io.digdag.spi.{Operator, OperatorContext, OperatorFactory, OperatorProvider, Plugin, TemplateEngine}
 import javax.inject.Inject
-import pro.civitaspo.digdag.plugin.livy.operator.AbstractLivyOperator
+import pro.civitaspo.digdag.plugin.livy.operator.{AbstractLivyOperator, LivySubmitJobOperator}
 
 object LivyPlugin {
 
@@ -17,6 +17,7 @@ object LivyPlugin {
 
     override def get(): JList[OperatorFactory] = {
       JArrays.asList(
+        operatorFactory("livy.submit_job", classOf[LivySubmitJobOperator])
       )
     }
 
@@ -30,5 +31,11 @@ object LivyPlugin {
       }
     }
   }
+}
 
+class LivyPlugin extends Plugin {
+  override def getServiceProvider[T](`type`: Class[T]): Class[_ <: T] = {
+    if (`type` ne classOf[OperatorProvider]) return null
+    classOf[LivyPlugin.LivyOperatorProvider].asSubclass(`type`)
+  }
 }
