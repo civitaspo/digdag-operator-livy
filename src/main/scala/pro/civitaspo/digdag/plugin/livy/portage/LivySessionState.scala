@@ -6,11 +6,7 @@ sealed abstract class SessionState(val state: String, val isActive: Boolean) {
   override def toString: String = state
 }
 
-class FinishedSessionState(
-  override val state: String,
-  override val isActive: Boolean,
-  val time: Long
-) extends SessionState(state, isActive)
+class FinishedSessionState(override val state: String, override val isActive: Boolean, val time: Long) extends SessionState(state, isActive)
 
 object SessionState {
 
@@ -43,15 +39,11 @@ object SessionState {
 
   object ShuttingDown extends SessionState("shutting_down", false)
 
-  case class Killed(override val time: Long = System.nanoTime()) extends
-    FinishedSessionState("killed", false, time)
+  case class Killed(override val time: Long = System.nanoTime()) extends FinishedSessionState("killed", false, time)
 
-  case class Error(override val time: Long = System.nanoTime()) extends
-    FinishedSessionState("error", true, time)
+  case class Error(override val time: Long = System.nanoTime()) extends FinishedSessionState("error", true, time)
 
-  case class Dead(override val time: Long = System.nanoTime()) extends
-    FinishedSessionState("dead", false, time)
+  case class Dead(override val time: Long = System.nanoTime()) extends FinishedSessionState("dead", false, time)
 
-  case class Success(override val time: Long = System.nanoTime()) extends
-    FinishedSessionState("success", false, time)
+  case class Success(override val time: Long = System.nanoTime()) extends FinishedSessionState("success", false, time)
 }

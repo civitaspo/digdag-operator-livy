@@ -10,10 +10,7 @@ case class ParamInWrapper(timeoutDurationMillis: Int, totalWaitMillisCounter: It
 case class ParamInRetry(e: Exception, retryCount: Int, retryLimit: Int, retryWaitMillis: Int, totalWaitMillis: Long)
 case class ParamInGiveup(firstException: Exception, lastException: Exception)
 
-class RetryExecutorWrapper(
-  exe: RetryExecutor,
-  param: ParamInWrapper
-) {
+class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
 
   def withRetryLimit(count: Int): RetryExecutorWrapper = {
     RetryExecutorWrapper(exe.withRetryLimit(count), param)
@@ -45,19 +42,10 @@ class RetryExecutorWrapper(
 
   def onRetry(f: ParamInRetry => Unit): RetryExecutorWrapper = {
     val r = new RetryAction {
-      override def onRetry(
-        exception: Exception,
-        retryCount: Int,
-        retryLimit: Int,
-        retryWait: Int
-      ): Unit = {
+      override def onRetry(exception: Exception, retryCount: Int, retryLimit: Int, retryWait: Int): Unit = {
         val totalWaitMillis: Int = param.totalWaitMillisCounter.next()
         if (totalWaitMillis > param.timeoutDurationMillis) {
-          throw new RetryGiveupException(
-            new IllegalStateException(
-              s"Total Wait: ${totalWaitMillis}ms is exceeded Timeout: ${param.timeoutDurationMillis}ms"
-            )
-          )
+          throw new RetryGiveupException(new IllegalStateException(s"Total Wait: ${totalWaitMillis}ms is exceeded Timeout: ${param.timeoutDurationMillis}ms"))
         }
         (1 until retryWait).foreach(_ => param.totalWaitMillisCounter.next())
         f(ParamInRetry(exception, retryCount, retryLimit, retryWait, totalWaitMillis))
@@ -92,14 +80,8 @@ class RetryExecutorWrapper(
 
 object RetryExecutorWrapper {
 
-  def apply(
-    exe: RetryExecutor,
-    param: ParamInWrapper
-  ): RetryExecutorWrapper = new RetryExecutorWrapper(exe, param)
+  def apply(exe: RetryExecutor, param: ParamInWrapper): RetryExecutorWrapper = new RetryExecutorWrapper(exe, param)
 
-  def apply(): RetryExecutorWrapper = RetryExecutorWrapper(
-    RetryExecutor.retryExecutor(),
-    ParamInWrapper(Int.MaxValue)
-  )
+  def apply(): RetryExecutorWrapper = RetryExecutorWrapper(RetryExecutor.retryExecutor(), ParamInWrapper(Int.MaxValue))
 
 }
