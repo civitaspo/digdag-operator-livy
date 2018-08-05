@@ -104,8 +104,4 @@ class LivySubmitJobOperator(context: OperatorContext, systemConfig: Config, temp
         }
       }
   }
-
-  protected def parseResponce(res: HttpResponse[String]): Config = {
-    cf.fromJsonString(res.body)
-  }
 }

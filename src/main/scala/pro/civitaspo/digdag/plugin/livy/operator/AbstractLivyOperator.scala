@@ -4,7 +4,7 @@ import io.digdag.client.config.{Config, ConfigFactory}
 import io.digdag.spi.{OperatorContext, TemplateEngine}
 import io.digdag.util.BaseOperator
 import org.slf4j.{Logger, LoggerFactory}
-import scalaj.http.{Http, HttpRequest}
+import scalaj.http.{Http, HttpRequest, HttpResponse}
 
 import scala.collection.JavaConverters._
 
@@ -25,5 +25,9 @@ abstract class AbstractLivyOperator(context: OperatorContext, systemConfig: Conf
   protected def withHttp[T](url: String)(f: HttpRequest => T): T = {
     val http: HttpRequest = Http(url).headers(("Content-type", "application/json"), header.toSeq: _*)
     f(http)
+  }
+
+  protected def parseResponce(res: HttpResponse[String]): Config = {
+    cf.fromJsonString(res.body)
   }
 }
