@@ -32,7 +32,7 @@ class LivyWaitJobOperator(context: OperatorContext, systemConfig: Config, templa
 
     val sessionId: Int = responceBody.get("id", classOf[Int])
     val applicationId: Optional[String] = responceBody.getOptional("appId", classOf[String])
-    val applicationInfo: Optional[String] = responceBody.getOptional("appInfo", classOf[String])
+    val applicationInfo: Config = responceBody.getNestedOrGetEmpty("appInfo")
     val state: String = responceBody.get("state", classOf[String])
 
     val result: Config = cf.create()
