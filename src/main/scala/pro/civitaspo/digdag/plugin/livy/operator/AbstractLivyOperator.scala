@@ -8,7 +8,8 @@ import scalaj.http.{Http, HttpRequest, HttpResponse}
 
 import scala.collection.JavaConverters._
 
-abstract class AbstractLivyOperator(operatorName: String, context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine) extends BaseOperator(context) {
+abstract class AbstractLivyOperator(operatorName: String, context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
+    extends BaseOperator(context) {
 
   protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
   protected val cf: ConfigFactory = request.getConfig.getFactory
