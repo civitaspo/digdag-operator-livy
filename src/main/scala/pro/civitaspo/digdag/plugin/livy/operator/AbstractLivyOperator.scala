@@ -17,7 +17,7 @@ abstract class AbstractLivyOperator(context: OperatorContext, systemConfig: Conf
 
   protected val host: String = params.get("host", classOf[String])
   protected val port: Int = params.get("port", classOf[Int], 8998)
-  protected val scheme: String = params.get("schema", classOf[String], "http")
+  protected val scheme: String = params.get("scheme", classOf[String], "http")
   protected val header: Map[String, String] = params.getMapOrEmpty("header", classOf[String], classOf[String]).asScala.toMap
 
   protected lazy val baseUrl: String = s"${scheme}://${host}:${port}"
