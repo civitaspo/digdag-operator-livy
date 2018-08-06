@@ -2,15 +2,63 @@ _export:
   plugin:
     repositories:
       - file://${repos}
-      # - https://jitpack.io
+      - https://jitpack.io
     dependencies:
       - pro.civitaspo:digdag-operator-livy:0.0.1
+      - pro.civitaspo:digdag-operator-emr_fleet:0.0.1
+  emr_fleet:
+    auth_method: profile
 
 +step1:
-  example>: template.txt
-  message: yes
-  path: example.out
+  emr_fleet.create_cluster>:
+  master_fleet:
+    bid_percentage: 60
+    candidates:
+      - instance_type: r3.xlarge
+      - instance_type: m3.xlarge
+  core_fleet:
+    target_capacity: 32
+    bid_percentage: 60
+    candidates:
+      - instance_type: r3.8xlarge
+        spot_units: 32
+        ebs:
+          optimized: false
+      - instance_type: r3.4xlarge
+        spot_units: 16
+  applications: [Hadoop, Spark, Livy]
+  configurations:
+    - classification: spark-defaults
+      properties:
+        maximizeResourceAllocation: true
+    - classification: capacity-scheduler
+      properties:
+        yarn.scheduler.capacity.resource-calculator: org.apache.hadoop.yarn.util.resource.DominantResourceCalculator
+    - classification: livy-conf
+      properties:
+        "livy.server.session.state-retain.sec": "3600s"
+  bootstrap_actions:
+    - name: DL spark
+      script:
+        path: s3://elasticmapreduce/bootstrap-actions/run-if
+        args: ['job-flow.jobFlowId!=null', 'wget', 'https://archive.apache.org/dist/spark/spark-2.3.1/spark-2.3.1-bin-without-hadoop.tgz', '-P', '/tmp/']
+    - name: Unarchive spark
+      script:
+        path: s3://elasticmapreduce/bootstrap-actions/run-if
+        args: ['job-flow.jobFlowId!=null', 'tar', 'zxvf', '/tmp/spark-2.3.1-bin-without-hadoop.tgz', '-C', '/home/hadoop/']
 
 +step2:
-  hello>: "hello "
-  message: world
+  echo>: ${emr_fleet.last_cluster}
+
++step3:
+  livy.submit_job>:
+  host: ${emr_fleet.last_cluster.master.public_ip_address}
+  job:
+    file: local:///home/hadoop/spark-2.3.1-bin-without-hadoop/examples/jars/spark-examples_2.11-2.3.1.jar
+    class_name: org.apache.spark.examples.SparkPi
+
++step4:
+  echo>: ${livy.last_job}
+
++step5:
+  emr_fleet.shutdown_cluster>: ${emr_fleet.last_cluster.id} 
