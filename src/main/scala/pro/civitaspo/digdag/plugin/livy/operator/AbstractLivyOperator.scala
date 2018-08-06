@@ -8,12 +8,18 @@ import scalaj.http.{Http, HttpRequest, HttpResponse}
 
 import scala.collection.JavaConverters._
 
-abstract class AbstractLivyOperator(context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine) extends BaseOperator(context) {
+abstract class AbstractLivyOperator(operatorName: String, context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine) extends BaseOperator(context) {
 
   protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
   protected val cf: ConfigFactory = request.getConfig.getFactory
-  protected val params: Config = request.getConfig.mergeDefault(request.getConfig.getNestedOrGetEmpty("livy"))
-  protected val operatorName: String = params.get("_type", classOf[String])
+  protected val params: Config = {
+    val elems: Seq[String] = operatorName.split("\\.")
+    elems.indices.foldLeft(request.getConfig) { (p: Config, idx: Int) =>
+      p.mergeDefault((0 to idx).foldLeft(request.getConfig) { (nestedParam: Config, keyIdx: Int) =>
+        nestedParam.getNestedOrGetEmpty(elems(keyIdx))
+      })
+    }
+  }
 
   protected val host: String = params.get("host", classOf[String])
   protected val port: Int = params.get("port", classOf[Int], 8998)

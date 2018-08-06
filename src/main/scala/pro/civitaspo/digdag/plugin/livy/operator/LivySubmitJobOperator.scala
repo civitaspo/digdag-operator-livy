@@ -12,8 +12,8 @@ import scalaj.http.{HttpResponse, HttpStatusException}
 
 import scala.collection.JavaConverters._
 
-class LivySubmitJobOperator(context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
-    extends AbstractLivyOperator(context, systemConfig, templateEngine) {
+class LivySubmitJobOperator(operatorName: String, context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
+    extends AbstractLivyOperator(operatorName, context, systemConfig, templateEngine) {
 
   val job: Config = params.getNested("job")
   val waitUntilFinished: Boolean = params.get("wait_until_finished", classOf[Boolean], true)
