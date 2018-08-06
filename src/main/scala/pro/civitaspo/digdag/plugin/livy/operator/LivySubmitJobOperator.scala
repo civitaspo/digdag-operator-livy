@@ -55,7 +55,7 @@ class LivySubmitJobOperator(context: OperatorContext, systemConfig: Config, temp
     val driverCores: Optional[Int] = job.getOptional("driver_cores", classOf[Int])
     val executorMemory: Optional[String] = job.getOptional("executor_memory", classOf[String])
     val executorCores: Optional[Int] = job.getOptional("executor_cores", classOf[Int])
-    val numExecutors: Optional[Int] = job.getOptional("num_executors", classOf  [Int])
+    val numExecutors: Optional[Int] = job.getOptional("num_executors", classOf[Int])
     val archives: Seq[String] = job.getListOrEmpty("archives", classOf[String]).asScala
     val queue: Optional[String] = job.getOptional("queue", classOf[String])
     val name: String = job.get("name", classOf[String], s"digdag-${params.get("session_uuid", classOf[String])}")

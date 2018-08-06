@@ -13,7 +13,7 @@ import scalaj.http.{HttpResponse, HttpStatusException}
 import scala.collection.JavaConverters._
 
 class LivyWaitJobOperator(context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
-  extends AbstractLivyOperator(context, systemConfig, templateEngine) {
+    extends AbstractLivyOperator(context, systemConfig, templateEngine) {
 
   class LivyWaitJobException(message: String) extends TaskExecutionException(message)
   class LivyWaitJobRetryableSessionStateException(message: String) extends LivyWaitJobException(message)
@@ -56,7 +56,9 @@ class LivyWaitJobOperator(context: OperatorContext, systemConfig: Config, templa
       .withWaitGrowRate(1.0)
       .withTimeout(timeoutDuration.getDuration)
       .onRetry { p: ParamInRetry =>
-        logger.info(s"[${operatorName}] retry session_id: $sessionId (next retry: ${p.retryCount}, total wait: ${p.totalWaitMillis} ms, msg: ${p.e.getMessage})")
+        logger.info(
+          s"[${operatorName}] retry session_id: $sessionId (next retry: ${p.retryCount}, total wait: ${p.totalWaitMillis} ms, msg: ${p.e.getMessage})"
+        )
         logger.debug(s"[${operatorName}] session_id: $sessionId, status: ${p.toString}")
       }
       .onGiveup { p: ParamInGiveup =>

@@ -16,10 +16,7 @@ object LivyPlugin {
     @Inject protected var templateEngine: TemplateEngine = null
 
     override def get(): JList[OperatorFactory] = {
-      JArrays.asList(
-        operatorFactory("livy.submit_job", classOf[LivySubmitJobOperator]),
-        operatorFactory("livy.wait_job", classOf[LivyWaitJobOperator])
-      )
+      JArrays.asList(operatorFactory("livy.submit_job", classOf[LivySubmitJobOperator]), operatorFactory("livy.wait_job", classOf[LivyWaitJobOperator]))
     }
 
     private def operatorFactory[T <: AbstractLivyOperator](operatorName: String, klass: Class[T]): OperatorFactory = {
