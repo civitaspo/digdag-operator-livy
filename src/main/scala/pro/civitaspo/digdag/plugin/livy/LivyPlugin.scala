@@ -6,7 +6,7 @@ import java.lang.reflect.Constructor
 import io.digdag.client.config.Config
 import io.digdag.spi.{Operator, OperatorContext, OperatorFactory, OperatorProvider, Plugin, TemplateEngine}
 import javax.inject.Inject
-import pro.civitaspo.digdag.plugin.livy.operator.{AbstractLivyOperator, LivySubmitJobOperator}
+import pro.civitaspo.digdag.plugin.livy.operator.{AbstractLivyOperator, LivySubmitJobOperator, LivyWaitJobOperator}
 
 object LivyPlugin {
 
@@ -16,7 +16,7 @@ object LivyPlugin {
     @Inject protected var templateEngine: TemplateEngine = null
 
     override def get(): JList[OperatorFactory] = {
-      JArrays.asList(operatorFactory("livy.submit_job", classOf[LivySubmitJobOperator]))
+      JArrays.asList(operatorFactory("livy.submit_job", classOf[LivySubmitJobOperator]), operatorFactory("livy.wait_job", classOf[LivyWaitJobOperator]))
     }
 
     private def operatorFactory[T <: AbstractLivyOperator](operatorName: String, klass: Class[T]): OperatorFactory = {

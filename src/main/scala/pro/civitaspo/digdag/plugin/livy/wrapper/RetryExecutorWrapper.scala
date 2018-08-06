@@ -6,7 +6,7 @@ import java.util.concurrent.Callable
 import io.digdag.util.RetryExecutor
 import io.digdag.util.RetryExecutor.{GiveupAction, RetryAction, RetryGiveupException, RetryPredicate}
 
-case class ParamInWrapper(timeoutDurationMillis: Int, totalWaitMillisCounter: Iterator[Int] = Stream.from(0).iterator)
+case class ParamInWrapper(timeoutDurationMillis: Int, totalWaitMillisCounter: Iterator[Int] = Stream.from(0).iterator, hasOnRetry: Boolean = false)
 case class ParamInRetry(e: Exception, retryCount: Int, retryLimit: Int, retryWaitMillis: Int, totalWaitMillis: Long)
 case class ParamInGiveup(firstException: Exception, lastException: Exception)
 
@@ -29,7 +29,7 @@ class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
   }
 
   def withTimeout(duration: Duration): RetryExecutorWrapper = {
-    val newParam: ParamInWrapper = ParamInWrapper(duration.toMillis.toInt, param.totalWaitMillisCounter)
+    val newParam: ParamInWrapper = ParamInWrapper(duration.toMillis.toInt, param.totalWaitMillisCounter, param.hasOnRetry)
     RetryExecutorWrapper(exe, newParam)
   }
 
@@ -51,7 +51,8 @@ class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
         f(ParamInRetry(exception, retryCount, retryLimit, retryWait, totalWaitMillis))
       }
     }
-    RetryExecutorWrapper(exe.onRetry(r), param)
+    val newParam: ParamInWrapper = ParamInWrapper(param.timeoutDurationMillis, param.totalWaitMillisCounter, true)
+    RetryExecutorWrapper(exe.onRetry(r), newParam)
   }
 
   def onGiveup(f: ParamInGiveup => Unit): RetryExecutorWrapper = {
@@ -64,6 +65,8 @@ class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
   }
 
   def runInterruptible[T](f: => T): T = {
+    if (!param.hasOnRetry) return onRetry { _ =>
+      }.runInterruptible(f)
     val c = new Callable[T] {
       override def call(): T = f
     }
@@ -71,6 +74,8 @@ class RetryExecutorWrapper(exe: RetryExecutor, param: ParamInWrapper) {
   }
 
   def run[T](f: => T): T = {
+    if (!param.hasOnRetry) return onRetry { _ =>
+      }.run(f)
     val c = new Callable[T] {
       override def call(): T = f
     }

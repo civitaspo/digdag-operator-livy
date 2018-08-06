@@ -24,16 +24,22 @@ class LivySubmitJobOperator(context: OperatorContext, systemConfig: Config, temp
   override def runTask(): TaskResult = {
     val responceBody = parseResponce(submitJob(jobJson))
 
+    val sessionId: Int = responceBody.get("id", classOf[Int])
+    val applicationId: Optional[String] = responceBody.getOptional("appId", classOf[String])
+    val applicationInfo: Config = responceBody.getNestedOrGetEmpty("appInfo")
+    val state: String = responceBody.get("state", classOf[String])
+
     val result: Config = cf.create()
     val last: Config = result.getNestedOrSetEmpty("livy").getNestedOrSetEmpty("last_job")
-    last.set("session_id", responceBody.get("id", classOf[Int]))
-    last.set("application_id", responceBody.getOptional("appId", classOf[String]))
-    last.set("application_info", responceBody.getMapOrEmpty("appInfo", classOf[String], classOf[String]))
-    last.set("state", responceBody.get("state", classOf[String]))
+    last.set("session_id", sessionId)
+    last.set("application_id", applicationId)
+    last.set("application_info", applicationInfo)
+    last.set("state", state)
 
     val builder = TaskResult.defaultBuilder(request)
     builder.resetStoreParams(ImmutableList.of(ConfigKey.of("livy", "last_job")))
     builder.storeParams(result)
+    if (waitUntilFinished) builder.subtaskConfig(buildWaiterSubTaskConfig(sessionId))
     builder.build()
   }
 
@@ -105,7 +111,19 @@ class LivySubmitJobOperator(context: OperatorContext, systemConfig: Config, temp
       }
   }
 
-  protected def parseResponce(res: HttpResponse[String]): Config = {
-    cf.fromJsonString(res.body)
+  protected def buildWaiterSubTaskConfig(sessionId: Int): Config = {
+    val subTask: Config = cf.create()
+    subTask.set("_command", sessionId)
+    subTask.set("_type", "livy.wait_job")
+    subTask.set("success_states", seqAsJavaList(Seq("success")))
+    subTask.set("error_states", seqAsJavaList(Seq("error", "dead", "killed")))
+    subTask.set("timeout_duration", waitTimeoutDuration)
+
+    subTask.set("host", host)
+    subTask.set("port", port)
+    subTask.set("scheme", scheme)
+    subTask.set("header", header)
+
+    subTask
   }
 }
