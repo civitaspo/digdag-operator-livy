@@ -4,10 +4,13 @@ _export:
       - file://${repos}
       - https://jitpack.io
     dependencies:
-      - pro.civitaspo:digdag-operator-livy:0.0.1
-      - pro.civitaspo:digdag-operator-emr_fleet:0.0.1
+      - pro.civitaspo:digdag-operator-livy:0.0.2
+      - pro.civitaspo:digdag-operator-emr_fleet:0.0.3
   emr_fleet:
     auth_method: profile
+  livy:
+    job:
+      executor_memory: 5G
 
 +step1:
   emr_fleet.create_cluster>:
@@ -39,13 +42,11 @@ _export:
         "livy.server.session.state-retain.sec": "3600s"
   bootstrap_actions:
     - name: DL spark
-      script:
-        path: s3://elasticmapreduce/bootstrap-actions/run-if
-        args: ['job-flow.jobFlowId!=null', 'wget', 'https://archive.apache.org/dist/spark/spark-2.3.1/spark-2.3.1-bin-without-hadoop.tgz', '-P', '/tmp/']
+      script: s3://elasticmapreduce/bootstrap-actions/run-if
+      args: ['job-flow.jobFlowId!=null', 'wget', 'https://archive.apache.org/dist/spark/spark-2.3.1/spark-2.3.1-bin-without-hadoop.tgz', '-P', '/tmp/']
     - name: Unarchive spark
-      script:
-        path: s3://elasticmapreduce/bootstrap-actions/run-if
-        args: ['job-flow.jobFlowId!=null', 'tar', 'zxvf', '/tmp/spark-2.3.1-bin-without-hadoop.tgz', '-C', '/home/hadoop/']
+      script: s3://elasticmapreduce/bootstrap-actions/run-if
+      args: ['job-flow.jobFlowId!=null', 'tar', 'zxvf', '/tmp/spark-2.3.1-bin-without-hadoop.tgz', '-C', '/home/hadoop/']
 
 +step2:
   echo>: ${emr_fleet.last_cluster}
