@@ -119,7 +119,13 @@ _export:
 
 Artifacts are build on local repos: `./build/repo`.
 
-### 2) run an example
+### 2) get your aws profile
+
+```sh
+aws configure
+```
+
+### 3) run an example
 
 ```sh
 ./example/run.sh
