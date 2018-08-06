@@ -12,8 +12,8 @@ import scalaj.http.{HttpResponse, HttpStatusException}
 
 import scala.collection.JavaConverters._
 
-class LivyWaitJobOperator(context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
-    extends AbstractLivyOperator(context, systemConfig, templateEngine) {
+class LivyWaitJobOperator(operatorName: String, context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
+    extends AbstractLivyOperator(operatorName, context, systemConfig, templateEngine) {
 
   class LivyWaitJobException(message: String) extends TaskExecutionException(message)
   class LivyWaitJobRetryableSessionStateException(message: String) extends LivyWaitJobException(message)
