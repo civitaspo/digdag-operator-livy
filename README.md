@@ -15,7 +15,7 @@ _export:
     repositories:
       - https://jitpack.io
     dependencies:
-      - pro.civitaspo:digdag-operator-livy:0.0.1
+      - pro.civitaspo:digdag-operator-livy:0.0.3
   livy:
     host: mylivy.internal
     port: 8998
