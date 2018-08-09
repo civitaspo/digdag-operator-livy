@@ -1,23 +1,17 @@
 package pro.civitaspo.digdag.plugin.livy.operator
 
-import java.time.Duration
-
 import com.google.common.base.Optional
 import com.google.common.collect.ImmutableList
 import io.digdag.client.config.{Config, ConfigKey}
-import io.digdag.spi.{OperatorContext, TaskExecutionException, TaskResult, TemplateEngine}
+import io.digdag.spi.{OperatorContext, TaskResult, TemplateEngine}
 import io.digdag.util.DurationParam
-import pro.civitaspo.digdag.plugin.livy.wrapper.{ParamInGiveup, ParamInRetry, RetryExecutorWrapper}
+import pro.civitaspo.digdag.plugin.livy.wrapper.{NotRetryableException, ParamInGiveup, ParamInRetry, RetryableException, RetryExecutorWrapper}
 import scalaj.http.{HttpResponse, HttpStatusException}
 
 import scala.collection.JavaConverters._
 
 class LivyWaitJobOperator(operatorName: String, context: OperatorContext, systemConfig: Config, templateEngine: TemplateEngine)
     extends AbstractLivyOperator(operatorName, context, systemConfig, templateEngine) {
-
-  class LivyWaitJobException(message: String) extends TaskExecutionException(message)
-  class LivyWaitJobRetryableSessionStateException(message: String) extends LivyWaitJobException(message)
-  class LivyWaitJobErrorSessionStateException(message: String) extends LivyWaitJobException(message)
 
   val sessionId: Int = params.get("_command", classOf[Int])
   val successStates: Seq[String] = params.getList("success_states", classOf[String]).asScala
@@ -65,7 +59,7 @@ class LivyWaitJobOperator(operatorName: String, context: OperatorContext, system
         logger.error(s"[${operatorName}] wait job failed: ${p.firstException.getMessage}")
       }
       .retryIf {
-        case ex: LivyWaitJobRetryableSessionStateException =>
+        case ex: RetryableException =>
           logger.info(ex.getMessage)
           true
         case ex: HttpStatusException =>
@@ -79,9 +73,9 @@ class LivyWaitJobOperator(operatorName: String, context: OperatorContext, system
           val res: HttpResponse[String] = http.asString.throwError
           val responseBody: Config = parseResponce(res)
           val state: String = responseBody.get("state", classOf[String])
-          if (errorStates.contains(state)) throw new LivyWaitJobErrorSessionStateException(s"state: ${state} is error state.")
+          if (errorStates.contains(state)) throw new NotRetryableException(message = s"state: ${state} is error state.")
           if (successStates.contains(state)) res
-          else throw new LivyWaitJobRetryableSessionStateException(s"state: ${state} is retryable.")
+          else throw new RetryableException(message = s"state: ${state} is retryable.")
         }
       }
   }
