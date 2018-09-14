@@ -67,7 +67,7 @@ class LivyWaitJobOperator(operatorName: String, context: OperatorContext, system
           if (ex.code / 100 == 4) false
           else true
         case ex: Exception =>
-          logger.error(s"[${operatorName}] wait job failed: ${ex.getMessage}")
+          logger.error(s"[${operatorName}] wait job failed: ${ex.getClass.toString}: ${ex.getMessage}")
           false
       }
       .runInterruptible {
