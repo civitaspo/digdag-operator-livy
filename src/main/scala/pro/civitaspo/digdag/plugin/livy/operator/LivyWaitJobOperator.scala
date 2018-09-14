@@ -56,7 +56,7 @@ class LivyWaitJobOperator(operatorName: String, context: OperatorContext, system
         logger.debug(s"[${operatorName}] session_id: $sessionId, status: ${p.toString}")
       }
       .onGiveup { p: ParamInGiveup =>
-        logger.error(s"[${operatorName}] wait job failed: ${p.firstException.getMessage}")
+        logger.error(s"[${operatorName}] wait job failed: ${p.lastException.getMessage}")
       }
       .retryIf {
         case ex: RetryableException =>
@@ -66,7 +66,9 @@ class LivyWaitJobOperator(operatorName: String, context: OperatorContext, system
           logger.warn(s"[${operatorName}] wait job failed: ${ex.getMessage}")
           if (ex.code / 100 == 4) false
           else true
-        case _ => false
+        case ex: Exception =>
+          logger.error(s"[${operatorName}] wait job failed: ${ex.getMessage}")
+          false
       }
       .runInterruptible {
         withHttp(url) { http =>
