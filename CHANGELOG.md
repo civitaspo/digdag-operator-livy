@@ -1,3 +1,8 @@
+0.0.5 (2018-09-14)
+==================
+
+* [Enhancement] Add **connection_timeout_duration**, **read_timeout_duration** option for HTTP Request
+
 0.0.4 (2018-09-14)
 ==================
 
