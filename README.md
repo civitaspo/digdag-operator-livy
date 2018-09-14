@@ -15,7 +15,7 @@ _export:
     repositories:
       - https://jitpack.io
     dependencies:
-      - pro.civitaspo:digdag-operator-livy:0.0.3
+      - pro.civitaspo:digdag-operator-livy:0.0.4
   livy:
     host: mylivy.internal
     port: 8998
@@ -26,14 +26,14 @@ _export:
   livy.submit_job>:
   job:
     name: livy-test
-    class: 'pro.civitaspo.livy_test.Launcher'
+    class_name: 'pro.civitaspo.livy_test.Launcher'
     file: s3://mybucket/path/to/livy-test.jar
     args: ['run', '-e', 'development']
-    driver-memory: 3G
-    driver-cores: 1
-    executor-memory: 30G
-    executor-cores: 4
-    num-executors: 25
+    driver_memory: 3G
+    driver_cores: 1
+    executor_memory: 30G
+    executor_cores: 4
+    num_executors: 25
   wait_until_finished: true
   wait_timeout_duration: 40m
 
