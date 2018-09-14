@@ -58,6 +58,8 @@ _export:
 - **scheme**: `"https"` or `"http"` (default: `"http"`)
 - **header**: Header for HTTP Requests. (string to string map, optional)
   - Note: Force to include `Content-type: application/json` as header.
+- **connection_timeout_duration**: Connection timeout duration for HTTP Requests. (`DurationParam`, default: `"5m"`)
+- **read_timeout_duration**: Read timeout duration for HTTP Requests. (`DurationParam`, default: `"5m"`)
 
 ## Configuration for `livy.submit_job>` operator
 

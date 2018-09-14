@@ -2,7 +2,7 @@ package pro.civitaspo.digdag.plugin.livy.operator
 
 import io.digdag.client.config.{Config, ConfigFactory}
 import io.digdag.spi.{OperatorContext, TemplateEngine}
-import io.digdag.util.BaseOperator
+import io.digdag.util.{BaseOperator, DurationParam}
 import org.slf4j.{Logger, LoggerFactory}
 import scalaj.http.{Http, HttpRequest, HttpResponse}
 
@@ -26,11 +26,18 @@ abstract class AbstractLivyOperator(operatorName: String, context: OperatorConte
   protected val port: Int = params.get("port", classOf[Int], 8998)
   protected val scheme: String = params.get("scheme", classOf[String], "http")
   protected val header: Map[String, String] = params.getMapOrEmpty("header", classOf[String], classOf[String]).asScala.toMap
+  protected val connectionTimeoutDuration: DurationParam = params.get("connection_timeout_duration", classOf[DurationParam], DurationParam.parse("5m"))
+  protected val readTimeoutDuration: DurationParam = params.get("read_timeout_duration", classOf[DurationParam], DurationParam.parse("5m"))
 
   protected lazy val baseUrl: String = s"${scheme}://${host}:${port}"
 
   protected def withHttp[T](url: String)(f: HttpRequest => T): T = {
-    val http: HttpRequest = Http(url).headers(("Content-type", "application/json"), header.toSeq: _*)
+    val http: HttpRequest = Http(url)
+      .timeout(
+        connTimeoutMs = connectionTimeoutDuration.getDuration.toMillis.toInt,
+        readTimeoutMs = readTimeoutDuration.getDuration.toMillis.toInt
+      )
+      .headers(("Content-type", "application/json"), header.toSeq: _*)
     f(http)
   }
 
