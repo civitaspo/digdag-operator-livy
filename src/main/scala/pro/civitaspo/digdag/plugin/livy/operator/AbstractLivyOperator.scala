@@ -33,10 +33,7 @@ abstract class AbstractLivyOperator(operatorName: String, context: OperatorConte
 
   protected def withHttp[T](url: String)(f: HttpRequest => T): T = {
     val http: HttpRequest = Http(url)
-      .timeout(
-        connTimeoutMs = connectionTimeoutDuration.getDuration.toMillis.toInt,
-        readTimeoutMs = readTimeoutDuration.getDuration.toMillis.toInt
-      )
+      .timeout(connTimeoutMs = connectionTimeoutDuration.getDuration.toMillis.toInt, readTimeoutMs = readTimeoutDuration.getDuration.toMillis.toInt)
       .headers(("Content-type", "application/json"), header.toSeq: _*)
     f(http)
   }
