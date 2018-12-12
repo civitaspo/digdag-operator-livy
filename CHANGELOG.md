@@ -1,3 +1,8 @@
+0.0.6 (2018-12-13)
+==================
+
+* [Enhancement] Use `Config#parseList{,OrEmpty}` instead of `Config#getList{,OrEmpty}`
+
 0.0.5 (2018-09-14)
 ==================
 
